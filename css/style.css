@@ -1,0 +1,110 @@
+/* ==================================================
+   EduAR Net - Consolidated CSS (fixed syntax)
+   - cleaned up nesting errors
+   - responsive, camera overlay, spinner, animations
+   ================================================== */
+
+:root{
+  --brand-1: #0b5fbf;
+  --brand-2: #00aaff;
+  --muted: #6b7280;
+  --bg-1: #f7fbff;
+  --card: #ffffff;
+  --glass: rgba(255,255,255,0.6);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;}
+body{
+  margin:0; padding:0; font-family: Inter, Poppins, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg,var(--bg-1), #ffffff); color:#0f172a; -webkit-font-smoothing:antialiased;
+}
+
+/* Header / Navbar */
+header.site-header{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between;
+  padding:12px 4%; background:linear-gradient(180deg,var(--glass), rgba(255,255,255,0.85)); backdrop-filter: blur(8px);
+  box-shadow: 0 6px 24px rgba(11,95,191,0.06);
+}
+.brand{display:flex; align-items:center; gap:12px}
+.brand .logo{width:44px; height:44px; border-radius:8px; background:linear-gradient(135deg,var(--brand-1),var(--brand-2)); display:flex; align-items:center; justify-content:center; color:white; font-weight:700}
+.brand h1{font-size:1.1rem; margin:0; color:var(--brand-1)}
+
+.nav-actions{display:flex; gap:10px; align-items:center}
+.btn{background:var(--brand-1); color:#fff; border:none; padding:8px 14px; border-radius:10px; cursor:pointer}
+.btn.secondary{background:transparent; color:var(--brand-1); border:1px solid rgba(11,95,191,0.12)}
+
+/* Layout */
+.container{max-width:1100px; margin:28px auto; padding:0 18px}
+.grid{display:grid; grid-template-columns: 1fr; gap:18px; align-items:start}
+
+/* Cards */
+.card{background:var(--card); border-radius:14px; padding:18px; box-shadow:0 8px 30px rgba(15,23,42,0.06); transition:transform .28s ease, box-shadow .28s ease, opacity .4s ease}
+.card h2{margin:0 0 8px 0; font-size:1.05rem; color:var(--brand-1)}
+.muted{color:var(--muted); font-size:0.95rem}
+
+/* 3D Viewer area */
+.viewer-wrap{display:flex; flex-direction:column; gap:12px}
+.model-viewer-card{height:420px; border-radius:12px; overflow:hidden; display:flex; flex-direction:column}
+.model-viewer-container{flex:1; background:transparent; display:flex; align-items:center; justify-content:center; position:relative}
+/* Make the <model-viewer> background transparent so the camera video shows through */
+model-viewer{width:100%; height:100%; background:transparent !important; background-color:transparent !important; display:block}
+
+/* model-viewer when placed inside camera */
+.model-viewer.in-camera{position:absolute; width:42%; height:48%; left:50%; top:50%; transform:translate3d(-50%,-50%,0); pointer-events:auto; background:transparent !important; background-color:transparent !important; box-shadow:0 18px 48px rgba(3,100,180,0.25); border-radius:10px; overflow:hidden; will-change:transform,opacity}
+.model-viewer.in-camera.entrance { opacity:0; transform:translate3d(-50%,-60%,0) scale(0.84); }
+
+
+/* Loading spinner */
+.spinner{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:64px; height:64px; border-radius:50%; border:6px solid rgba(255,255,255,0.15); border-top-color:var(--brand-2); animation:spin 1s linear infinite; box-shadow:0 8px 20px rgba(3,100,180,0.12)}
+.model-viewer-container .spinner.hidden{display:none}
+
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+/* Responsive sizes for in-camera floating viewer */
+@media (max-width:640px){
+  .model-viewer.in-camera{width:70%; height:44%;}
+}
+@media (min-width:641px) and (max-width:1024px){
+  .model-viewer.in-camera{width:56%; height:52%;}
+}
+@media (min-width:1025px){
+  .model-viewer.in-camera{width:42%; height:48%;}
+}
+
+/* Camera / Scanner overlay */
+.camera-area { position: relative; }
+#camera-overlay{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto}
+#camera-container{position:relative; width:100%; height:100%;}
+/* video should be the visual background */
+#camera-container video{width:100%; height:100%; object-fit:cover; filter:contrast(0.95) saturate(1.05); z-index:1; pointer-events:none}
+.model-viewer.in-camera{z-index:2}
+.scan-line{position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, rgba(0,170,255,0.9), transparent); animation:scanMove 2s linear infinite}
+.scanner-text{position:absolute; bottom:14px; left:0; right:0; text-align:center; color:rgba(175,235,255,0.95); font-weight:600; text-shadow:0 2px 6px rgba(0,0,0,0.6)}
+/* removed .dummy-3d - no longer used */
+
+/* visibility helpers */
+.hidden{display:none}
+
+/* Fade & hover */
+.card:hover{transform:translateY(-8px) scale(1.01); box-shadow:0 16px 40px rgba(15,23,42,0.12)}
+
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+@keyframes rotateDummy{from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes scanMove{0%{top:0;} 100%{top:100%}}
+
+.controls{display:flex; gap:8px; padding:12px; align-items:center}
+.controls select{padding:8px 10px; border-radius:8px; border:1px solid #e6edf3}
+.controls .small{font-size:0.9rem}
+
+/* Footer */
+footer{padding:18px 4%; text-align:center; color:var(--muted); font-size:0.9rem}
+
+/* Utilities */
+.center{text-align:center}
+
+/* Animations */
+@keyframes floatUp{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+
+/* Responsive adjustments */
+@media(max-width:980px){.model-viewer-card{height:320px}}

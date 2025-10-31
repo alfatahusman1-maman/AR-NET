@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>EduAR Net — Sistem Pembelajaran Jaringan</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- model-viewer (simple GLB viewer) -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <div class="logo">EN</div>
+        <h1>EduAR Net</h1>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="grid">
+        <aside class="card viewer-wrap">
+          <h2>3D & AR Viewer</h2>
+          <div class="model-viewer-card">
+            <div class="model-viewer-container">
+              <model-viewer id="modelViewer" camera-controls ar ar-modes="webxr scene-viewer quick-look" exposure="1" shadow-intensity="0.5" interaction-prompt="none" alt="3D model viewer">
+                <!-- src will be set by js/3d-viewer.js -->
+              </model-viewer>
+              <div id="model-spinner" class="spinner hidden" aria-hidden="true"></div>
+
+              <!-- Camera / scanner overlay (hidden until enabled) -->
+              <div id="camera-overlay" class="hidden">
+                <div id="camera-container">
+                  <video id="cameraVideo" autoplay muted playsinline></video>
+                  <div class="scan-line"></div>
+                  <div class="scanner-text">Mode Pindai • Pilih model untuk melihat</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="controls">
+              <label class="small" for="model-select">Model:</label>
+              <select id="model-select" aria-label="Pilih model 3D">
+                <!-- options are populated from js/3d-viewer.js -->
+              </select>
+              <button id="rotate-toggle" class="btn secondary" title="Pause / resume rotation">Toggle Rotate</button>
+              <button id="camera-toggle" class="btn secondary" title="Toggle camera">Camera On/Off</button>
+              <button id="fullscreen" class="btn" title="Fullscreen viewer">Fullscreen</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      EduAR Net — Sistem Pembelajaran Jaringan • dibuat untuk pembelajaran interaktif.
+    </footer>
+
+    <script type="module" src="js/3d-viewer.js"></script>
+    <script type="module" src="js/script.js"></script>
+  </body>
+</html>
