@@ -43,6 +43,26 @@ function ensureIpOverlay() {
   return ipOverlay;
 }
 
+// Position overlay centered above the model-viewer element and keep it responsive.
+function positionIpOverlay() {
+  const overlay = ensureIpOverlay();
+  if (!overlay || !viewer || !modelContainer) return;
+  // ensure overlay is attached to the same parent as viewer for correct coords
+  if (overlay.parentElement !== modelContainer) modelContainer.appendChild(overlay);
+  // compute viewer position relative to container
+  const cRect = modelContainer.getBoundingClientRect();
+  const vRect = viewer.getBoundingClientRect();
+  // center horizontally over viewer
+  const left = vRect.left - cRect.left + vRect.width / 2;
+  // place above the viewer (8px gap), if not enough space clamp to small top
+  const overlayHeight = overlay.offsetHeight || 40;
+  let top = vRect.top - cRect.top - overlayHeight - 8;
+  if (top < 6) top = 6;
+  overlay.style.left = `${left}px`;
+  overlay.style.top = `${top}px`;
+  overlay.style.transform = 'translateX(-50%)';
+}
+
 function generateRandomIP() {
   // generate a random private-ish IPv4 for demo (avoid .0 and .255)
   const a = 10 + Math.floor(Math.random() * 245);
@@ -86,7 +106,36 @@ function updateOverlayForSrc(src) {
   label.textContent = state.ip;
   explain.textContent = `${meta.label} • IP acak • diperbarui ${formatTimeAgo(state.lastUpdated)}`;
   overlay.classList.remove('hidden');
+  // reposition overlay after updating content (allow DOM to layout briefly)
+  requestAnimationFrame(() => setTimeout(positionIpOverlay, 8));
 }
+
+// Keep overlay positioned on resize/scroll and when viewer changes size.
+const _resizeHandlers = [];
+function setupOverlayAutoPositioning() {
+  // avoid creating multiple observers
+  if (setupOverlayAutoPositioning._done) return;
+  setupOverlayAutoPositioning._done = true;
+
+  // reposition on window resize and scroll
+  const onWin = () => positionIpOverlay();
+  window.addEventListener('resize', onWin);
+  window.addEventListener('scroll', onWin, { passive: true });
+  _resizeHandlers.push(() => { window.removeEventListener('resize', onWin); window.removeEventListener('scroll', onWin); });
+
+  // observe viewer size changes (better for responsive layout)
+  try {
+    const ro = new ResizeObserver(() => positionIpOverlay());
+    ro.observe(modelContainer);
+    ro.observe(viewer);
+    _resizeHandlers.push(() => ro.disconnect());
+  } catch (e) {
+    // ResizeObserver not available — rely on window resize only
+  }
+}
+
+// initialize overlay auto-positioning immediately
+setupOverlayAutoPositioning();
 
 function startPeriodicIpUpdates(intervalMs = 10000) {
   if (ipUpdateIntervalHandle) clearInterval(ipUpdateIntervalHandle);
