@@ -26,6 +26,84 @@ let dragging = false;
 let dragStart = null;
 let initialPinch = null;
 let currentModelSrc = null;
+// IP label state per model src
+const modelIPState = new Map(); // key: src -> { ip, lastUpdated }
+let ipUpdateIntervalHandle = null;
+
+// Create overlay element (label + explanation) and attach to the model container
+const modelContainer = document.querySelector('.model-viewer-container');
+let ipOverlay = null;
+function ensureIpOverlay() {
+  if (ipOverlay) return ipOverlay;
+  ipOverlay = document.createElement('div');
+  ipOverlay.className = 'ip-overlay hidden';
+  ipOverlay.innerHTML = `<div class="ip-label">IP</div><div class="ip-explanation muted"></div>`;
+  // attach to the same container that holds the <model-viewer>
+  if (modelContainer) modelContainer.appendChild(ipOverlay);
+  return ipOverlay;
+}
+
+function generateRandomIP() {
+  // generate a random private-ish IPv4 for demo (avoid .0 and .255)
+  const a = 10 + Math.floor(Math.random() * 245);
+  const b = Math.floor(Math.random() * 256);
+  const c = Math.floor(Math.random() * 256);
+  const d = 1 + Math.floor(Math.random() * 253);
+  return `${a}.${b}.${c}.${d}`;
+}
+
+function formatTimeAgo(d) {
+  if (!d) return '';
+  const s = Math.floor((Date.now() - d) / 1000);
+  if (s < 5) return 'baru saja';
+  if (s < 60) return `${s}s lalu`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m lalu`;
+  const h = Math.floor(m / 60);
+  return `${h}j lalu`;
+}
+
+function ensureModelState(src) {
+  if (!src) return null;
+  if (!modelIPState.has(src)) {
+    modelIPState.set(src, { ip: generateRandomIP(), lastUpdated: Date.now() });
+  }
+  return modelIPState.get(src);
+}
+
+function updateOverlayForSrc(src) {
+  const overlay = ensureIpOverlay();
+  if (!overlay) return;
+  const state = ensureModelState(src);
+  if (!state) {
+    overlay.classList.add('hidden');
+    return;
+  }
+  const label = overlay.querySelector('.ip-label');
+  const explain = overlay.querySelector('.ip-explanation');
+  // find a user-friendly model label if available
+  const meta = models.find(m => m.src === src) || { label: src };
+  label.textContent = state.ip;
+  explain.textContent = `${meta.label} • IP acak • diperbarui ${formatTimeAgo(state.lastUpdated)}`;
+  overlay.classList.remove('hidden');
+}
+
+function startPeriodicIpUpdates(intervalMs = 10000) {
+  if (ipUpdateIntervalHandle) clearInterval(ipUpdateIntervalHandle);
+  ipUpdateIntervalHandle = setInterval(() => {
+    // update every known model's IP randomly
+    for (const key of modelIPState.keys()) {
+      const st = modelIPState.get(key);
+      st.ip = generateRandomIP();
+      st.lastUpdated = Date.now();
+      // if this is the currently displayed model, refresh overlay text
+      if (key === (currentModelSrc || viewer?.src)) updateOverlayForSrc(key);
+    }
+  }, intervalMs);
+}
+
+// start periodic updates right away
+startPeriodicIpUpdates(12000);
 
 function saveTransformForModel(src) {
   if (!src) return;
@@ -59,6 +137,9 @@ function setModel(src) {
   if (typeof currentModelSrc !== 'undefined' && currentModelSrc) saveTransformForModel(currentModelSrc);
   viewer.src = src;
   currentModelSrc = src;
+  // ensure we have an IP record for this model and update overlay
+  ensureModelState(src);
+  updateOverlayForSrc(src);
   // enable auto-rotate by default when selecting a model
   viewer.setAttribute('auto-rotate', '');
 }
@@ -76,6 +157,9 @@ if (select && viewer) {
     // after selecting a model, try to load saved transform so it appears where user left it
     loadTransformForModel(e.target.value);
     applyInCameraTransform();
+    // update overlay to reflect the selected model
+    ensureModelState(e.target.value);
+    updateOverlayForSrc(e.target.value);
   });
 }
 
@@ -114,6 +198,8 @@ async function startCamera() {
         // remember if viewer had camera-controls so we can restore later
         originalHasControls = viewer.hasAttribute('camera-controls');
         cameraContainer.appendChild(viewer);
+        // move ip overlay with the viewer so labels appear in-camera as well
+        if (ipOverlay) cameraContainer.appendChild(ipOverlay);
         viewer.classList.add('in-camera');
         // ensure it rotates
         viewer.setAttribute('auto-rotate', '');
@@ -149,6 +235,10 @@ function stopCamera() {
       originalParent.insertBefore(viewer, originalNextSibling);
     } else {
       originalParent.appendChild(viewer);
+    }
+    // also restore ip overlay
+    if (ipOverlay && originalParent) {
+      originalParent.appendChild(ipOverlay);
     }
     originalParent = null;
     originalNextSibling = null;
@@ -201,6 +291,8 @@ viewer?.addEventListener('load', () => {
     // small delay to ensure DOM updates
     setTimeout(() => doEntranceAnimation(), 60);
   }
+  // refresh overlay for the current model
+  updateOverlayForSrc(currentModelSrc || viewer.src);
 });
 
 // handle load errors gracefully
@@ -343,4 +435,9 @@ window.addEventListener('DOMContentLoaded', () => {
 // save transform on unload
 window.addEventListener('beforeunload', () => {
   try { saveTransformForModel(currentModelSrc || viewer?.src); } catch (e) { }
+});
+
+// cleanup interval on unload/navigation
+window.addEventListener('unload', () => {
+  if (ipUpdateIntervalHandle) clearInterval(ipUpdateIntervalHandle);
 });
